@@ -1,7 +1,7 @@
 import numpy as np
 from .timbre import SR, lf, vc
 
-def envelope(tim, dur, n, vel, freq, noff):
+def envelope(tim, dur: float, n: int, vel: float, freq: float, noff: int) -> 'np.ndarray':
     lo_factor, vel_c = lf(freq), vc(vel)
     att_time = min(tim.att * (1 - tim.va*vel_c), dur*0.25)
     dec_time = min(tim.d1, dur*0.4)

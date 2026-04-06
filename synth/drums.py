@@ -1,53 +1,64 @@
 import numpy as np
 from .timbre import SR
+from typing import NamedTuple
+
+
+class DrumParams(NamedTuple):
+    f_start: int        # tone sweep start Hz
+    f_end: int          # tone sweep end Hz
+    tone_decay: float   # tone decay time (s)
+    noise_decay: float  # noise decay time (s)
+    tone_mix: float     # tone amplitude (0-1)
+    noise_mix: float    # noise amplitude (0-1)
+
 
 # (f_start, f_end, tone_decay, noise_decay, tone_mix, noise_mix)
 _MAP = {
-    27: (600,600,0.015,0.010,0.15,0.35),   # High Q (electronic tick)
-    28: (300,180,0.020,0.025,0.25,0.55),    # Slap
-    29: (0,0,0.01,0.015,0.0,0.45),          # Scratch Push
-    30: (0,0,0.01,0.018,0.0,0.45),          # Scratch Pull
-    31: (800,800,0.008,0.008,0.40,0.35),    # Sticks
-    32: (120,38,0.10,0.04,0.90,0.18),       # Square Click (soft kick)
-    33: (1200,1200,0.005,0.005,0.55,0.30),  # Metronome Bell
-    34: (140,40,0.12,0.05,0.92,0.20),       # Acoustic Bass Drum (soft)
-    35: (150,42,0.12,0.06,0.95,0.22), 36: (155,45,0.11,0.055,0.95,0.22),
-    37: (800,800,0.025,0.025,0.30,0.80), 38: (185,125,0.07,0.20,0.45,0.75),
-    39: (250,200,0.05,0.08,0.30,0.85), 40: (175,120,0.065,0.18,0.45,0.75),
-    41: (95,65,0.20,0.08,0.82,0.35), 42: (0,0,0.01,0.030,0.0,0.82),
-    43: (110,78,0.17,0.07,0.78,0.40), 44: (0,0,0.01,0.020,0.0,0.82),
-    45: (125,88,0.15,0.07,0.72,0.42), 46: (0,0,0.01,0.12,0.0,0.75),
-    47: (145,98,0.13,0.06,0.68,0.42), 48: (165,115,0.11,0.055,0.62,0.42),
-    49: (0,0,0.01,0.40,0.0,0.68), 50: (190,190,0.08,0.05,0.50,0.50),
-    51: (0,0,0.01,0.28,0.08,0.68), 52: (0,0,0.01,0.45,0.0,0.65),
-    53: (0,0,0.01,0.10,0.10,0.55),  # ride bell
-    54: (0,0,0.01,0.015,0.0,0.28),  # tambourine — short jingles
-    55: (0,0,0.01,0.06,0.0,0.75), 56: (540,540,0.06,0.04,0.70,0.30),  # cowbell
-    57: (0,0,0.01,0.42,0.0,0.68), 58: (180,120,0.12,0.18,0.25,0.60),  # vibraslap
-    59: (0,0,0.01,0.22,0.0,0.70),
+    27: DrumParams(600,600,0.015,0.010,0.15,0.35),   # High Q (electronic tick)
+    28: DrumParams(300,180,0.020,0.025,0.25,0.55),    # Slap
+    29: DrumParams(0,0,0.01,0.015,0.0,0.45),          # Scratch Push
+    30: DrumParams(0,0,0.01,0.018,0.0,0.45),          # Scratch Pull
+    31: DrumParams(800,800,0.008,0.008,0.40,0.35),    # Sticks
+    32: DrumParams(120,38,0.10,0.04,0.90,0.18),       # Square Click (soft kick)
+    33: DrumParams(1200,1200,0.005,0.005,0.55,0.30),  # Metronome Bell
+    34: DrumParams(140,40,0.12,0.05,0.92,0.20),       # Acoustic Bass Drum (soft)
+    35: DrumParams(150,42,0.12,0.06,0.95,0.22), 36: DrumParams(155,45,0.11,0.055,0.95,0.22),
+    37: DrumParams(800,800,0.025,0.025,0.30,0.80), 38: DrumParams(185,125,0.07,0.20,0.45,0.75),
+    39: DrumParams(250,200,0.05,0.08,0.30,0.85), 40: DrumParams(175,120,0.065,0.18,0.45,0.75),
+    41: DrumParams(95,65,0.20,0.08,0.82,0.35), 42: DrumParams(0,0,0.01,0.030,0.0,0.82),
+    43: DrumParams(110,78,0.17,0.07,0.78,0.40), 44: DrumParams(0,0,0.01,0.020,0.0,0.82),
+    45: DrumParams(125,88,0.15,0.07,0.72,0.42), 46: DrumParams(0,0,0.01,0.12,0.0,0.75),
+    47: DrumParams(145,98,0.13,0.06,0.68,0.42), 48: DrumParams(165,115,0.11,0.055,0.62,0.42),
+    49: DrumParams(0,0,0.01,0.40,0.0,0.68), 50: DrumParams(190,190,0.08,0.05,0.50,0.50),
+    51: DrumParams(0,0,0.01,0.28,0.08,0.68), 52: DrumParams(0,0,0.01,0.45,0.0,0.65),
+    53: DrumParams(0,0,0.01,0.10,0.10,0.55),  # ride bell
+    54: DrumParams(0,0,0.01,0.015,0.0,0.28),  # tambourine — short jingles
+    55: DrumParams(0,0,0.01,0.06,0.0,0.75), 56: DrumParams(540,540,0.06,0.04,0.70,0.30),  # cowbell
+    57: DrumParams(0,0,0.01,0.42,0.0,0.68), 58: DrumParams(180,120,0.12,0.18,0.25,0.60),  # vibraslap
+    59: DrumParams(0,0,0.01,0.22,0.0,0.70),
     # Latin percussion (GM notes 60-81)
-    60: (350,320,0.04,0.03,0.70,0.30),  # Hi Bongo
-    61: (240,200,0.06,0.04,0.75,0.30),  # Low Bongo
-    62: (420,380,0.03,0.02,0.55,0.25),  # Mute Hi Conga
-    63: (320,280,0.05,0.04,0.65,0.35),  # Open Hi Conga
-    64: (220,180,0.07,0.05,0.75,0.30),  # Low Conga
-    65: (520,500,0.04,0.03,0.72,0.28),  # High Timbale
-    66: (350,320,0.06,0.04,0.72,0.32),  # Low Timbale
-    67: (900,900,0.04,0.02,0.75,0.25),  # High Agogo
-    68: (680,680,0.05,0.03,0.75,0.25),  # Low Agogo
-    69: (0,0,0.01,0.025,0.0,0.50),      # Cabasa
-    70: (0,0,0.01,0.018,0.0,0.55),      # Maracas
-    71: (2400,1800,0.06,0.04,0.50,0.25),  # Short Whistle
-    72: (2400,1800,0.20,0.10,0.50,0.20),  # Long Whistle
-    73: (0,0,0.01,0.015,0.10,0.55),      # Short Guiro
-    74: (0,0,0.01,0.06,0.10,0.55),       # Long Guiro
-    75: (2500,2500,0.01,0.008,0.80,0.20), # Claves
-    76: (1200,1200,0.015,0.010,0.70,0.25), # Hi Wood Block
-    77: (800,800,0.020,0.012,0.70,0.25),   # Low Wood Block
-    78: (380,300,0.04,0.035,0.45,0.40),    # Mute Cuica
-    79: (480,250,0.08,0.06,0.55,0.40),     # Open Cuica
-    80: (0,0,0.01,0.06,0.15,0.60),         # Mute Triangle
-    81: (0,0,0.01,0.25,0.15,0.60),         # Open Triangle
+    60: DrumParams(350,320,0.04,0.03,0.70,0.30),  # Hi Bongo
+    61: DrumParams(240,200,0.06,0.04,0.75,0.30),  # Low Bongo
+    62: DrumParams(420,380,0.03,0.02,0.55,0.25),  # Mute Hi Conga
+    63: DrumParams(320,280,0.05,0.04,0.65,0.35),  # Open Hi Conga
+    64: DrumParams(220,180,0.07,0.05,0.75,0.30),  # Low Conga
+    65: DrumParams(520,500,0.04,0.03,0.72,0.28),  # High Timbale
+    66: DrumParams(350,320,0.06,0.04,0.72,0.32),  # Low Timbale
+    67: DrumParams(900,900,0.04,0.02,0.75,0.25),  # High Agogo
+    68: DrumParams(680,680,0.05,0.03,0.75,0.25),  # Low Agogo
+    69: DrumParams(0,0,0.01,0.025,0.0,0.50),      # Cabasa
+    70: DrumParams(0,0,0.01,0.018,0.0,0.55),      # Maracas
+    71: DrumParams(2400,1800,0.06,0.04,0.50,0.25),  # Short Whistle
+    72: DrumParams(2400,1800,0.20,0.10,0.50,0.20),  # Long Whistle
+    73: DrumParams(0,0,0.01,0.015,0.10,0.55),      # Short Guiro
+    74: DrumParams(0,0,0.01,0.06,0.10,0.55),       # Long Guiro
+    75: DrumParams(2500,2500,0.01,0.008,0.80,0.20), # Claves
+    76: DrumParams(1200,1200,0.015,0.010,0.70,0.25), # Hi Wood Block
+    77: DrumParams(800,800,0.020,0.012,0.70,0.25),   # Low Wood Block
+    78: DrumParams(380,300,0.04,0.035,0.45,0.40),    # Mute Cuica
+    79: DrumParams(480,250,0.08,0.06,0.55,0.40),     # Open Cuica
+    80: DrumParams(0,0,0.01,0.06,0.15,0.60),         # Mute Triangle
+    81: DrumParams(0,0,0.01,0.25,0.15,0.60),         # Open Triangle
 }
 _METAL = {
     42:[3400,6100,8800,12500], 44:[3200,5800,8400,11800],
@@ -66,8 +77,8 @@ _KICK = {32, 34, 35, 36}
 _TOM = {41, 43, 45, 47, 48}
 
 
-def drum(note, dur, vel, rng):
-    f0,f1,td,nd,tm,nm = _MAP.get(note, (200,150,0.08,0.08,0.50,0.50))
+def drum(note: int, dur: float, vel: float, rng) -> 'np.ndarray':
+    f0,f1,td,nd,tm,nm = _MAP.get(note, DrumParams(200,150,0.08,0.08,0.50,0.50))
     length = max(dur, max(td,nd)*3.5)
     n = int(SR*length)
     if n == 0: return np.zeros(0)

@@ -10,31 +10,27 @@ from synth.timbre import SR
 _LATE_EVENT_THRESH = 0.1
 
 
-def smooth_cc(curve, tau_ms=50.0):
+def smooth_cc(curve, tau_ms: float = 50.0):
     """1-pole LP with zero-transient init."""
-    if curve is None:
-        return None
     alpha = 1.0 - np.exp(-1000.0 / (SR * tau_ms))
     b, a = [alpha], [1.0, -(1.0 - alpha)]
     zi = lfilter_zi(b, a) * curve[0]
     return lfilter(b, a, curve, zi=zi)[0]
 
 
-def smooth_cc_sidechain(curve, down_ms=5.0, up_ms=30.0):
+def smooth_cc_sidechain(curve, down_ms: float = 5.0, up_ms: float = 30.0):
     """Asymmetric smoother for CC7 sidechain: fast duck, smooth release.
 
     Uses min(fast, slow) trick — fast-attack/slow-release envelope:
     - Downward: fast curve drops first -> minimum selects it (quick duck).
     - Upward:   slow curve lags -> minimum selects it (smooth release).
     """
-    if curve is None:
-        return None
     fast = smooth_cc(curve, tau_ms=down_ms)
     slow = smooth_cc(curve, tau_ms=up_ms)
     return np.minimum(fast, slow)
 
 
-def interp_cc(events, mx, default=1.0):
+def interp_cc(events: list, mx: int, default: float = 1.0):
     """Interpolate CC events to per-sample step curve (zero-order hold).
 
     GM standard: CC values take effect immediately and hold until the
@@ -53,7 +49,7 @@ def interp_cc(events, mx, default=1.0):
         Per-sample numpy array, or None if events is empty.
     """
     if not events:
-        return None
+        return np.full(mx, default)
     times = [t for t, v in events]
     vals = [v for t, v in events]
     # Use the GM default when the first event is late (> 100 ms);
@@ -88,7 +84,7 @@ def interp_cc(events, mx, default=1.0):
     return np.interp(t_arr, step_t, step_v)
 
 
-def make_pb_curve(pb_events, start, dur):
+def make_pb_curve(pb_events: list, start: float, dur: float):
     """Interpolate pitch bend events into per-sample curve (semitones)."""
     if not pb_events:
         return None

@@ -3,7 +3,8 @@
 from .timbre import SR, A4
 from .instruments import TIMBRES
 from .gm import (PROGRAM_MAP, PANNING, FM_INSTRUMENTS, KS_PLUCKED,
-                 KS_DUR_THRESHOLD, SFX_INSTRUMENTS, LEAD_INSTRUMENTS)
+                 KS_DUR_THRESHOLD, KS_ALWAYS, SFX_INSTRUMENTS, LEAD_INSTRUMENTS,
+                 KS_GAIN)
 from .additive import synthesize as _additive, _apply_formants
 from .fm import synthesize_fm as _fm
 from .ks import synthesize_plucked as _ks_pluck
@@ -14,7 +15,6 @@ import numpy as np
 
 _KS_BLEND_LO = KS_DUR_THRESHOLD - 0.25
 _KS_BLEND_HI = KS_DUR_THRESHOLD + 0.15
-_KS_CAL = {}
 
 _SFX_MIN_FREQ = 30.0
 
@@ -65,22 +65,8 @@ def _ks_with_formants(w, tim, freq=0):
     return _peak_cap(w)
 
 
-def _ks_gain(name, tim):
-    if name in _KS_CAL:
-        return _KS_CAL[name]
-    ratios = []
-    for midi in (48, 66, 84):
-        freq = A4 * 2 ** ((midi - 69) / 12.0)
-        for vel in (0.5, 1.0):
-            ks = _ks_with_formants(
-                _ks_pluck(freq, 0.6, vel, tim, name, 0), tim, freq)
-            ad = _additive(freq, 0.6, vel, tim, name, 0)
-            n = min(len(ks), len(ad))
-            rk = np.sqrt(np.mean(ks[:n] ** 2)) + 1e-10
-            ra = np.sqrt(np.mean(ad[:n] ** 2)) + 1e-10
-            ratios.append(rk / ra)
-    _KS_CAL[name] = float(np.median(ratios))
-    return _KS_CAL[name]
+def _ks_gain(name):
+    return KS_GAIN.get(name, 1.0)
 
 
 def synthesize(freq: float, dur: float, vel: float, tim, name: str = "default",
@@ -97,7 +83,7 @@ def synthesize(freq: float, dur: float, vel: float, tim, name: str = "default",
         return _peak_cap(_fm(freq, dur, vel, tim, name, nid, pb_curve=pb_curve))
 
     if name in KS_PLUCKED:
-        if dur < _KS_BLEND_LO:
+        if dur < _KS_BLEND_LO or name in KS_ALWAYS:
             w = _ks_with_formants(
                 _ks_pluck(freq, dur, vel, tim, name, nid), tim, freq)
             return _peak_cap(_apply_pb_shift(w, pb_curve))
@@ -116,7 +102,7 @@ def synthesize(freq: float, dur: float, vel: float, tim, name: str = "default",
             out[:len(w_add)] += np.sqrt(blend) * w_add
             return _peak_cap(out)
         w = _additive(freq, dur, vel, tim, name, nid, pb_curve=pb_curve)
-        w *= _ks_gain(name, tim)
+        w *= _ks_gain(name)
         return _peak_cap(w)
 
     return _peak_cap(_additive(freq, dur, vel, tim, name, nid, pb_curve=pb_curve))

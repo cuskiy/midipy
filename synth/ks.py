@@ -5,6 +5,7 @@ LP phase delay subtracted from delay line for sub-cent pitch accuracy.
 """
 import math
 import numpy as np
+from .dsp import BoundedCache
 from scipy.signal import resample_poly, butter, sosfilt
 from .timbre import SR, vc
 
@@ -14,7 +15,7 @@ KS_T60 = 2.0
 KS_MUTE = 0.985
 KS_LP_BASE = 0.55
 KS_LP_VEL = 0.08
-_AH_CACHE = {}
+_AH_CACHE = BoundedCache(32)
 
 
 def _lp_phase_delay(coeff, freq):
@@ -35,7 +36,7 @@ def _anti_harshness(out, freq):
     return sosfilt(_AH_CACHE[key], out)
 
 
-def synthesize_plucked(freq, dur, vel, tim, name="guitar", nid=0):
+def synthesize_plucked(freq: float, dur: float, vel: float, tim, name: str = "guitar", nid: int = 0) -> 'np.ndarray':
     tail = min(tim.rel * 1.2 + 0.35, 2.5)
     n = int(SR * (dur + tail))
     if n == 0:

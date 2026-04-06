@@ -9,12 +9,13 @@ warms over time.
 import math
 import numpy as np
 from scipy.signal import sosfilt, butter
+from .dsp import BoundedCache
 from .timbre import SR, vc
 from .envelope import envelope
 
 TWO_PI = 2.0 * math.pi
 
-_BP_CACHE = {}
+_BP_CACHE = BoundedCache(32)
 
 
 def _get_bp(lo, hi, order=2):
@@ -38,7 +39,7 @@ _BANDS = [
 ]
 
 
-def synthesize_sfx(freq, dur, vel, tim, name="sfx", nid=0, pb_curve=None):
+def synthesize_sfx(freq: float, dur: float, vel: float, tim, name: str = "sfx", nid: int = 0, pb_curve=None) -> 'np.ndarray':
     """Render one SFX note as filtered-noise atmospheric texture."""
     tail = min(tim.rel * 1.5 + 0.25, 2.0)
     total_dur = dur + tail

@@ -74,3 +74,8 @@ Engines and their decorrelation mechanisms:
 - **KS steady-state convergence**: KS delay lines converge to the same
   waveform regardless of initial excitation. Phase decorrelation
   requires post-synthesis delay shifting, not excitation variation.
+
+## Versioning
+
+Each change set produces a new version file (v140, v141, v142, ...).
+Never overwrite a released version — always increment.

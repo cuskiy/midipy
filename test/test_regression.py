@@ -13,7 +13,7 @@ from synth.envelope import envelope
 from synth import synthesize
 from synth.drums import drum, _MAP
 from synth.ks import synthesize_plucked
-from mix.cc import interp_cc, smooth_cc, smooth_cc_sidechain, make_pb_curve
+from mix.cc import interp_cc, make_pb_curve
 
 
 # ── Helpers ──────────────────────────────────────────────────────────
@@ -108,8 +108,12 @@ def test_ks_pitch_accuracy():
 # ── Test: CC interpolation ───────────────────────────────────────────
 
 def test_interp_cc_empty():
-    """No events → None."""
-    assert interp_cc([], 44100) is None
+    """No events → constant default array."""
+    import numpy as np
+    result = interp_cc([], 44100)
+    assert result is not None
+    assert len(result) == 44100
+    assert np.allclose(result, 1.0)  # default=1.0
 
 
 def test_interp_cc_step_function():
@@ -214,11 +218,119 @@ def test_clear_caches():
     """clear_caches() should not crash and should empty caches."""
     from mix import clear_caches, _IR_CACHE
     # Populate a cache first
-    from synth.timbre import _BP_CACHE, get_bp
+    from synth.dsp import _BP_CACHE, get_bp
     get_bp(200, 4000)
     assert len(_BP_CACHE) > 0
     clear_caches()
     assert len(_BP_CACHE) == 0, "Cache not cleared"
+
+
+def _make_test_midi():
+    """Create a minimal in-memory MIDI for pipeline tests."""
+    import mido
+    mid = mido.MidiFile(ticks_per_beat=480)
+    t = mido.MidiTrack()
+    mid.tracks.append(t)
+    t.append(mido.MetaMessage('set_tempo', tempo=500000))
+    t.append(mido.Message('program_change', program=0, channel=0))
+    t.append(mido.Message('note_on', note=60, velocity=100, channel=0, time=0))
+    t.append(mido.Message('note_off', note=60, velocity=0, channel=0, time=480))
+    t.append(mido.Message('note_on', note=64, velocity=80, channel=0, time=0))
+    t.append(mido.Message('note_off', note=64, velocity=0, channel=0, time=480))
+    t2 = mido.MidiTrack()
+    mid.tracks.append(t2)
+    t2.append(mido.Message('program_change', program=80, channel=1))
+    t2.append(mido.Message('note_on', note=72, velocity=90, channel=1, time=0))
+    t2.append(mido.Message('note_off', note=72, velocity=0, channel=1, time=960))
+    return mid
+
+
+def test_pipeline_render():
+    """F1: Full pipeline renders valid FLAC from synthetic MIDI."""
+    import tempfile, os, soundfile as sf
+    from mix import render, clear_caches
+    mid = _make_test_midi()
+    tmp_mid = tempfile.mktemp(suffix='.mid')
+    tmp_flac = tempfile.mktemp(suffix='.flac')
+    try:
+        mid.save(tmp_mid)
+        from midi import parse
+        result = parse(tmp_mid)
+        clear_caches()
+        render(result, tmp_flac)
+        data, sr = sf.read(tmp_flac)
+        assert sr == 44100, f"SR={sr}"
+        assert len(data) > SR, "output too short"
+        assert np.max(np.abs(data)) > 0.01, "silent output"
+    finally:
+        for f in [tmp_mid, tmp_flac]:
+            if os.path.exists(f): os.unlink(f)
+
+
+def test_stems_export():
+    """F2: Stems export produces per-instrument files."""
+    import tempfile, os, shutil, glob, soundfile as sf
+    from mix import render, clear_caches
+    mid = _make_test_midi()
+    tmp_mid = tempfile.mktemp(suffix='.mid')
+    tmp_flac = tempfile.mktemp(suffix='.flac')
+    stem_dir = tmp_flac.replace('.flac', '_stems')
+    try:
+        mid.save(tmp_mid)
+        from midi import parse
+        result = parse(tmp_mid)
+        clear_caches()
+        render(result, tmp_flac, stems=True, stems_dir=stem_dir)
+        stems = glob.glob(os.path.join(stem_dir, '*.flac'))
+        assert len(stems) >= 1, f"no stems found"
+        for sp in stems:
+            sd, _ = sf.read(sp)
+            assert len(sd) > 0
+    finally:
+        for f in [tmp_mid, tmp_flac]:
+            if os.path.exists(f): os.unlink(f)
+        if os.path.exists(stem_dir): shutil.rmtree(stem_dir)
+
+
+def test_region_render():
+    """F3: Region rendering produces correct-length output."""
+    import tempfile, os, soundfile as sf
+    from mix import render, clear_caches
+    mid = _make_test_midi()
+    tmp_mid = tempfile.mktemp(suffix='.mid')
+    tmp_flac = tempfile.mktemp(suffix='.flac')
+    try:
+        mid.save(tmp_mid)
+        from midi import parse
+        result = parse(tmp_mid)
+        clear_caches()
+        render(result, tmp_flac, region=(0, 1))
+        data, sr = sf.read(tmp_flac)
+        dur = len(data) / sr
+        assert 0.8 < dur < 1.5, f"region duration={dur:.2f}s"
+    finally:
+        for f in [tmp_mid, tmp_flac]:
+            if os.path.exists(f): os.unlink(f)
+
+
+def test_spatial_no_crash():
+    """F4: Spatial mode renders without crash."""
+    import tempfile, os, soundfile as sf
+    from mix import render, clear_caches
+    mid = _make_test_midi()
+    tmp_mid = tempfile.mktemp(suffix='.mid')
+    tmp_flac = tempfile.mktemp(suffix='.flac')
+    try:
+        mid.save(tmp_mid)
+        from midi import parse
+        result = parse(tmp_mid)
+        clear_caches()
+        render(result, tmp_flac, spatial=True)
+        data, sr = sf.read(tmp_flac)
+        assert np.max(np.abs(data)) > 0.01
+    finally:
+        for f in [tmp_mid, tmp_flac]:
+            if os.path.exists(f): os.unlink(f)
 
 
 # ── Runner ───────────────────────────────────────────────────────────

@@ -28,7 +28,7 @@ FM_PRESETS = {
 }
 
 
-def synthesize_fm(freq, dur, vel, tim, name="epiano", nid=0, pb_curve=None):
+def synthesize_fm(freq: float, dur: float, vel: float, tim, name: str = "epiano", nid: int = 0, pb_curve=None) -> 'np.ndarray':
     p = FM_PRESETS.get(name, FM_PRESETS["epiano"])
     tail = min(tim.rel * 1.2 + 0.15, 2.5) if dur >= 0.2 else min(tim.rel + 0.20, 1.0)
     td = dur + tail

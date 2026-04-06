@@ -10,6 +10,7 @@ reset discontinuity.  Multi-voice smooths this.
 import math
 import numpy as np
 from scipy.signal import sosfilt, resample_poly, butter
+from .dsp import BoundedCache
 from .timbre import SR, vc, biquad_low_shelf, biquad_peak
 from .envelope import envelope
 
@@ -24,7 +25,7 @@ _DETUNE_AMPS  = [0.15, 0.22, 0.26, 0.22, 0.15]
 _N_VOICES = len(_DETUNE_CENTS)
 _VOICE_NORM = 1.0 / math.sqrt(sum(a*a for a in _DETUNE_AMPS))
 
-_FILTER_CACHE = {}
+_FILTER_CACHE = BoundedCache(32)
 
 
 def _get_cached(name, build_fn):
@@ -75,7 +76,7 @@ def _saw_pb(freq, n, pb_cents, sr, phase=0.0):
     return out
 
 
-def synthesize_lead(freq, dur, vel, tim, name="lead", nid=0, pb_curve=None):
+def synthesize_lead(freq: float, dur: float, vel: float, tim, name: str = "lead", nid: int = 0, pb_curve=None) -> 'np.ndarray':
     """Render one supersaw lead note — 5-voice detuned ensemble."""
     tail = min(tim.rel * 1.5 + 0.1, 2.0)
     td = dur + tail

@@ -80,4 +80,22 @@ FM_INSTRUMENTS = {"epiano", "celesta", "vibes", "marimba"}
 LEAD_INSTRUMENTS = {"lead"}
 SFX_INSTRUMENTS = {"sfx"}
 KS_PLUCKED = {"guitar", "nylon", "harp", "harpsichord", "bass", "contrabass"}
+KS_ALWAYS = {"contrabass"}
 KS_DUR_THRESHOLD = 0.8
+SYMPA_INSTRUMENTS = {"piano", "harpsichord", "harp"}
+
+# Precomputed reference RMS (A4 vel=0.85 dur=0.5) for fixed-gain scaling
+REF_RMS = {
+    "bass": 0.2368, "brass": 0.1064, "celesta": 0.1219, "cello": 0.1270,
+    "choir": 0.1639, "contrabass": 0.1977, "default": 0.1625, "epiano": 0.1769,
+    "flute": 0.2332, "guitar": 0.1929, "harp": 0.1650, "harpsichord": 0.1952,
+    "lead": 0.1813, "marimba": 0.1271, "nylon": 0.1828, "organ": 0.2311,
+    "pad": 0.0600, "piano": 0.2305, "pluck": 0.0619, "sfx": 0.1194,
+    "strings": 0.2072, "synbass": 0.1238, "vibes": 0.1270, "woodwind": 0.0890,
+}
+
+# Precomputed KS/additive gain calibration
+KS_GAIN = {
+    "bass": 1.5029, "contrabass": 2.1392, "guitar": 1.5587,
+    "harp": 1.6591, "harpsichord": 2.4288, "nylon": 0.9074,
+}

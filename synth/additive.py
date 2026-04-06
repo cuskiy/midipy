@@ -3,13 +3,25 @@ Formant shaping is done per-partial via Lorentzian resonance, not post-EQ.
 _apply_formants retained for KS/FM paths only."""
 import numpy as np
 import math
-from scipy.signal import sosfilt
+from typing import List, NamedTuple, Tuple
+from scipy.signal import sosfilt, resample_poly
+from .dsp import BoundedCache
 from .timbre import (SR, MAX_DET, TUNE, pr, lf, vc, strings_for_freq,
                      detune_scale, csv_parse, get_bp, biquad_peak)
 from .envelope import envelope
 
-_SE_CACHE = {}
-_PEAK_CACHE = {}
+
+class _PartialData(NamedTuple):
+    k: int          # harmonic number
+    am: float       # stretched harmonic ratio
+    fk: float       # frequency Hz
+    a: float        # amplitude
+    R: float        # decay rate
+    phi: float      # initial phase
+
+
+_SE_CACHE = BoundedCache(64)
+_PEAK_CACHE = BoundedCache(64)
 
 
 def _parse_formants(tim):
@@ -33,8 +45,6 @@ def _spectral_gain(f, formants):
     for fc, bw, g_lin in formants:
         g += g_lin / (1.0 + ((f - fc) / bw) ** 2)
     return g
-
-
 
 
 def _get_peak_filters(tim):
@@ -80,7 +90,7 @@ def _brass_shape(w, vel, tim):
     return (1 - amount*0.5) * w + amount*0.5 * shaped
 
 
-def synthesize(freq, dur, vel, tim, name="default", nid=0, pb_curve=None):
+def synthesize(freq: float, dur: float, vel: float, tim, name: str = "default", nid: int = 0, pb_curve=None) -> 'np.ndarray':
     tail = min(tim.rel * 1.2 + 0.15, 2.5) if dur >= 0.2 else min(tim.rel + 0.20, 1.0)
     td = dur + tail
     n = int(SR * td)
@@ -156,7 +166,7 @@ def synthesize(freq, dur, vel, tim, name="default", nid=0, pb_curve=None):
     _nyq_lo = _nyq * 0.7          # start fade at 70% Nyquist (~15.4 kHz)
     _nyq_rng = _nyq - _nyq_lo     # fade range
 
-    pdata = []
+    pdata: List[_PartialData] = []
     for k in range(1, n_partials+1):
         am = k * math.sqrt(1+B*k*k) if B > 0 else float(k)
         fk = freq * am
@@ -189,7 +199,7 @@ def synthesize(freq, dur, vel, tim, name="default", nid=0, pb_curve=None):
         a *= 1+0.03*(rng.random()-0.5)
         R = tim.b1*max(k-1, 0.05) + tim.b3*k*k
         R *= pscale*(1+0.05*(rng.random()-0.5))
-        pdata.append((k, am, fk, a, R, phi))
+        pdata.append(_PartialData(k, am, fk, a, R, phi))
 
     if not pdata:
         return np.zeros(n)
@@ -329,6 +339,13 @@ def synthesize(freq, dur, vel, tim, name="default", nid=0, pb_curve=None):
 
     if ref > 0:
         w /= ref
+
+    # 2x oversample for nonlinear stages to prevent aliasing
+    has_nonlinear = (tim.lip_shape > 0 and v > 0.01) or tim.drive > 0
+    n_orig = len(w)
+    if has_nonlinear:
+        w = resample_poly(w, 2, 1)
+
     w = _brass_shape(w, v, tim)
 
     if tim.drive > 0:
@@ -336,6 +353,9 @@ def synthesize(freq, dur, vel, tim, name="default", nid=0, pb_curve=None):
         td_v = np.tanh(d)
         if td_v > 1e-6:
             w = np.tanh(w*d)/td_v
+
+    if has_nonlinear:
+        w = resample_poly(w, 1, 2)[:n_orig]
 
     # Remove DC introduced by asymmetric saturation / formant shaping
     w -= np.mean(w)
