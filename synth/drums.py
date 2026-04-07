@@ -1,3 +1,4 @@
+"""Percussion synthesis: 55 GM drum sounds."""
 import numpy as np
 from .timbre import SR
 from typing import NamedTuple
@@ -75,6 +76,47 @@ _METAL = {
 _SNARE = {38, 40}
 _KICK = {32, 34, 35, 36}
 _TOM = {41, 43, 45, 47, 48}
+_HIHAT = {42, 44, 46}
+_CYMBAL = {49, 51, 52, 55, 57}
+_RIDE_BELL = {53}
+_STICK = {31, 37}
+_TICK = {27, 33, 56, 75, 76, 77}    # clicks, claves, cowbell, woodblocks
+_LATIN_TONAL = {60, 61, 62, 63, 64, 65, 66, 67, 68, 78, 79}  # bongos, congas, timbales, agogo, cuica
+_SHAKER = {54, 69, 70}              # tambourine, cabasa, maracas
+_GUIRO = {73, 74}
+_TRIANGLE = {80, 81}
+_WHISTLE = {71, 72}
+_VIBRA = {58, 59}                   # vibraslap, mute ride
+_SCRATCH = {28, 29, 30}             # slap, scratch push/pull
+
+# Per-class target peak (normalize each drum hit to this for consistent loudness)
+_DRUM_TARGET = {
+    'kick': 0.95, 'snare': 0.92, 'tom': 0.88,
+    'hihat': 0.62, 'cymbal': 0.82, 'ride_bell': 0.75,
+    'stick': 0.62, 'tick': 0.65,
+    'latin': 0.82, 'shaker': 0.55, 'guiro': 0.62,
+    'triangle': 0.65, 'whistle': 0.75, 'vibra': 0.70, 'scratch': 0.55,
+    'default': 0.85,
+}
+
+
+def _drum_target(note: int) -> float:
+    if note in _KICK:       return _DRUM_TARGET['kick']
+    if note in _SNARE:      return _DRUM_TARGET['snare']
+    if note in _TOM:        return _DRUM_TARGET['tom']
+    if note in _HIHAT:      return _DRUM_TARGET['hihat']
+    if note in _CYMBAL:     return _DRUM_TARGET['cymbal']
+    if note in _RIDE_BELL:  return _DRUM_TARGET['ride_bell']
+    if note in _STICK:      return _DRUM_TARGET['stick']
+    if note in _TICK:       return _DRUM_TARGET['tick']
+    if note in _LATIN_TONAL:return _DRUM_TARGET['latin']
+    if note in _SHAKER:     return _DRUM_TARGET['shaker']
+    if note in _GUIRO:      return _DRUM_TARGET['guiro']
+    if note in _TRIANGLE:   return _DRUM_TARGET['triangle']
+    if note in _WHISTLE:    return _DRUM_TARGET['whistle']
+    if note in _VIBRA:      return _DRUM_TARGET['vibra']
+    if note in _SCRATCH:    return _DRUM_TARGET['scratch']
+    return _DRUM_TARGET['default']
 
 
 def drum(note: int, dur: float, vel: float, rng) -> 'np.ndarray':
@@ -148,9 +190,13 @@ def drum(note: int, dur: float, vel: float, rng) -> 'np.ndarray':
         wire += wire_ns * wire2_mod * wire_env * 0.15
         out[:wn] += wire*vel
 
-    out *= vel
     pk = np.max(np.abs(out))
-    if pk > 1: out /= pk
+    # Per-drum-class target peak: gives consistent loudness within a class
+    # while preserving perceptual relationships between classes (kick > shaker).
+    # Eliminates per-hit RNG variance and hit-to-hit volume drift.
+    if pk > 1e-10:
+        out *= _drum_target(note) / pk
+    out *= vel
     ac = min(128, n)
     if ac > 1: out[-ac:] *= 0.5*(1+np.cos(np.linspace(0, np.pi, ac)))
     return out

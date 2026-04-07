@@ -1,12 +1,16 @@
 """MIDI parser. Supports GM standard CCs, aftertouch, pitch bend, RPN."""
+from __future__ import annotations
+
+from typing import Dict, List, Tuple
+
 import mido
+
+from config import MAX_PEDAL_SUSTAIN
 from schema import Note, ChannelData, ParseResult, NoteEvent, EventKind
 
-MAX_PEDAL_SUSTAIN = 5.0
 
-
-def _tempo_map(mid):
-    evts = []
+def _tempo_map(mid: mido.MidiFile) -> List[Tuple[int, int]]:
+    evts: List[Tuple[int, int]] = []
     for tr in mid.tracks:
         tick = 0
         for msg in tr:
@@ -19,7 +23,7 @@ def _tempo_map(mid):
     return evts
 
 
-def _tick2sec(tick, tmap, tpb):
+def _tick2sec(tick: int, tmap: List[Tuple[int, int]], tpb: int) -> float:
     sec, pt, pp = 0.0, 0, tmap[0][1]
     for tk, tp in tmap[1:]:
         if tk >= tick:
@@ -29,21 +33,21 @@ def _tick2sec(tick, tmap, tpb):
     return sec + (tick - pt) / tpb * pp / 1e6
 
 
-def _ensure_ch(ch_data: dict, ch: int) -> ChannelData:
+def _ensure_ch(ch_data: Dict[int, ChannelData], ch: int) -> ChannelData:
     if ch not in ch_data:
         ch_data[ch] = ChannelData()
     return ch_data[ch]
 
 
-def _dedup_cc(ch_data: dict):
-    for ch, cd in ch_data.items():
+def _dedup_cc(ch_data: Dict[int, ChannelData]) -> None:
+    for _ch, cd in ch_data.items():
         for attr in ("vol", "expr", "mod", "pb", "aftertouch",
                      "brightness", "reverb", "chorus"):
             evts = getattr(cd, attr)
             if not evts:
                 continue
             evts.sort(key=lambda x: x[0])
-            deduped = []
+            deduped: list = []
             for t, v in evts:
                 if deduped and abs(t - deduped[-1][0]) < 1e-9:
                     deduped[-1] = (t, v)
@@ -52,22 +56,28 @@ def _dedup_cc(ch_data: dict):
             setattr(cd, attr, deduped)
 
 
-def parse_events(path: str):
+def parse_events(
+    path: str,
+) -> Tuple[List[NoteEvent], Dict[int, ChannelData], Dict[int, int]]:
     """Parse MIDI into NoteEvents (with dur via forward scan) + ChannelData + pan.
 
     Returns (events, ch_data, channel_pan).
+
+    Raises RuntimeError on read failure or if the file contains no events.
     """
     try:
         mid = mido.MidiFile(path)
     except Exception as e:
         raise RuntimeError(f"Failed to read MIDI file '{path}': {e}") from e
+
     tmap = _tempo_map(mid)
-    ch_data = {}
-    raw_events = []
-    channel_prog = {}
-    channel_pan = {}
-    rpn_msb = {}
-    rpn_lsb = {}
+    ch_data: Dict[int, ChannelData] = {}
+    raw_events: list = []
+    channel_prog: Dict[int, int] = {}
+    channel_pan: Dict[int, int] = {}
+    rpn_msb: Dict[int, int] = {}
+    rpn_lsb: Dict[int, int] = {}
+
     for track in mid.tracks:
         tick = 0
         for msg in track:
@@ -122,37 +132,41 @@ def parse_events(path: str):
                 elif cc == 121:
                     rpn_msb.pop(ch, None)
                     rpn_lsb.pop(ch, None)
+
+    if not raw_events:
+        raise RuntimeError(f"MIDI file '{path}' contains no note events")
+
     raw_events.sort(key=lambda e: (e[0], -e[1]))
     _dedup_cc(ch_data)
 
     # Forward scan: fill dur for NOTE_ON by matching NOTE_OFF
-    pending = {}
-    events = []
-    max_time = raw_events[-1][0] + 2.0 if raw_events else 0.0
-    for t, kind, midi, vel, ch, prog in raw_events:
+    pending: Dict[Tuple[int, int], int] = {}
+    events: List[NoteEvent] = []
+    max_time: float = raw_events[-1][0] + 2.0
+    for t, kind, midi_note, vel, ch, prog in raw_events:
         if kind == EventKind.NOTE_ON:
-            key = (ch, midi)
+            key = (ch, midi_note)
             if key in pending:
                 idx = pending[key]
                 old = events[idx]
                 events[idx] = NoteEvent(old.time, old.kind, old.midi,
                                         old.vel, old.ch, old.prog,
                                         dur=t - old.time)
-            events.append(NoteEvent(t, kind, midi, vel, ch, prog, dur=0.0))
+            events.append(NoteEvent(t, kind, midi_note, vel, ch, prog, dur=0.0))
             pending[key] = len(events) - 1
         elif kind == EventKind.NOTE_OFF:
-            key = (ch, midi)
+            key = (ch, midi_note)
             if key in pending:
                 idx = pending.pop(key)
                 old = events[idx]
                 events[idx] = NoteEvent(old.time, old.kind, old.midi,
                                         old.vel, old.ch, old.prog,
                                         dur=t - old.time)
-            events.append(NoteEvent(t, kind, midi, vel, ch, prog))
+            events.append(NoteEvent(t, kind, midi_note, vel, ch, prog))
         else:
-            events.append(NoteEvent(t, kind, midi, vel, ch, prog))
+            events.append(NoteEvent(t, kind, midi_note, vel, ch, prog))
 
-    for key, idx in pending.items():
+    for _key, idx in pending.items():
         old = events[idx]
         events[idx] = NoteEvent(old.time, old.kind, old.midi, old.vel,
                                 old.ch, old.prog, dur=max_time - old.time)
@@ -160,17 +174,16 @@ def parse_events(path: str):
     return events, ch_data, channel_pan
 
 
-def _events_to_notes(events):
+def _events_to_notes(events: List[NoteEvent]) -> List[Note]:
     """Resolve NoteEvents into Notes, handling pedal-extended durations."""
-    pedal_on = {}
-    active = {}   # (ch, midi) → NoteEvent
-    held = {}     # (ch, midi) → NoteEvent (note_off received while pedal held)
-    notes = []
+    pedal_on: Dict[int, bool] = {}
+    active: Dict[Tuple[int, int], NoteEvent] = {}
+    held: Dict[Tuple[int, int], NoteEvent] = {}
+    notes: List[Note] = []
 
     for ev in events:
         if ev.kind == EventKind.NOTE_ON:
             key = (ev.ch, ev.midi)
-            # Close any prior note on same key
             for store in (active, held):
                 if key in store:
                     old = store.pop(key)
@@ -201,16 +214,21 @@ def _events_to_notes(events):
                         notes.append(Note(old.time, old.midi, dur,
                                           old.vel, old.ch, old.prog))
 
-    max_time = events[-1].time + 2.0 if events else 0.0
+    max_time: float = events[-1].time + 2.0 if events else 0.0
     for store in (active, held):
-        for key, ev in list(store.items()):
+        for _key, ev in list(store.items()):
             dur = min(max(max_time - ev.time, 0.01), MAX_PEDAL_SUSTAIN)
             notes.append(Note(ev.time, ev.midi, dur, ev.vel, ev.ch, ev.prog))
     return notes
 
 
 def parse(path: str) -> ParseResult:
-    """Parse MIDI file. Built on parse_events()."""
+    """Parse MIDI file. Built on parse_events().
+
+    Raises RuntimeError on read failure, empty file, or no-note file.
+    """
     events, ch_data, channel_pans = parse_events(path)
     notes = _events_to_notes(events)
+    if not notes:
+        raise RuntimeError(f"MIDI file '{path}' produced no notes after parsing")
     return ParseResult(notes=notes, channel_pans=channel_pans, ch_data=ch_data)

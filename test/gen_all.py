@@ -250,8 +250,8 @@ if __name__ == "__main__":
         fp = os.path.join(out_dir, f"{label}.flac")
         _make_instrument_midi(prog, lo, hi, mp)
         print(f"\n=== {label} (prog={prog}, {lo}-{hi}) ===")
-        tracks, pans, ch_data = parse(mp)
-        render(tracks, pans, fp, ch_data=ch_data)
+        result = parse(mp)
+        render(result, fp)
 
     # lead unison test
     if not targets or "lead_unison" in targets or "lead" in targets:
@@ -259,15 +259,15 @@ if __name__ == "__main__":
         fp = os.path.join(out_dir, "lead_unison.flac")
         _make_lead_unison_midi(mp)
         print(f"\n=== lead_unison (4-track unison + CC7 sidechain) ===")
-        tracks, pans, ch_data = parse(mp)
-        render(tracks, pans, fp, ch_data=ch_data)
+        result = parse(mp)
+        render(result, fp)
 
     if not targets or "drums" in targets:
         mp = os.path.join(out_dir, "drums.mid")
         fp = os.path.join(out_dir, "drums.flac")
         _make_drum_midi(mp)
         print(f"\n=== drums ===")
-        tracks, pans, ch_data = parse(mp)
-        render(tracks, pans, fp, ch_data=ch_data)
+        result = parse(mp)
+        render(result, fp)
 
     print(f"\nAll done. Samples in {out_dir}/")

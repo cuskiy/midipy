@@ -1,3 +1,4 @@
+"""HRTF, early reflections, binaural crossfeed."""
 import numpy as np
 from scipy.signal import fftconvolve, butter, sosfilt
 from synth.timbre import SR, biquad_peak, biquad_high_shelf

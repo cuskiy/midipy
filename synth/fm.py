@@ -1,7 +1,10 @@
+"""FM synthesis: multi-operator with oversampling."""
+from __future__ import annotations
 import math
+from typing import Optional
 import numpy as np
 from scipy.signal import resample_poly, sosfilt
-from .timbre import SR, vc, lf, get_bp
+from .timbre import SR, Timbre, vc, lf, get_bp
 from .envelope import envelope
 from .additive import _apply_formants
 
@@ -28,7 +31,7 @@ FM_PRESETS = {
 }
 
 
-def synthesize_fm(freq: float, dur: float, vel: float, tim, name: str = "epiano", nid: int = 0, pb_curve=None) -> 'np.ndarray':
+def synthesize_fm(freq: float, dur: float, vel: float, tim: Timbre, name: str = "epiano", nid: int = 0, pb_curve: Optional[np.ndarray] = None) -> np.ndarray:
     p = FM_PRESETS.get(name, FM_PRESETS["epiano"])
     tail = min(tim.rel * 1.2 + 0.15, 2.5) if dur >= 0.2 else min(tim.rel + 0.20, 1.0)
     td = dur + tail

@@ -5,12 +5,14 @@ Three frequency bands (body/mid/air) with independent decay rates
 create natural spectral evolution — high bands fade first, sound
 warms over time.
 """
+from __future__ import annotations
 
 import math
+from typing import Optional
 import numpy as np
 from scipy.signal import sosfilt, butter
 from .dsp import BoundedCache
-from .timbre import SR, vc
+from .timbre import SR, Timbre, vc
 from .envelope import envelope
 
 TWO_PI = 2.0 * math.pi
@@ -39,7 +41,7 @@ _BANDS = [
 ]
 
 
-def synthesize_sfx(freq: float, dur: float, vel: float, tim, name: str = "sfx", nid: int = 0, pb_curve=None) -> 'np.ndarray':
+def synthesize_sfx(freq: float, dur: float, vel: float, tim: Timbre, name: str = "sfx", nid: int = 0, pb_curve: Optional[np.ndarray] = None) -> np.ndarray:
     """Render one SFX note as filtered-noise atmospheric texture."""
     tail = min(tim.rel * 1.5 + 0.25, 2.0)
     total_dur = dur + tail

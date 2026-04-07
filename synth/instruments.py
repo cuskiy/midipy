@@ -2,6 +2,10 @@ from .timbre import Timbre
 
 TIMBRES = {
     "piano": Timbre(
+        # v156: REVERTED to v140 baseline.  v153-v155 attempts to "brighten"
+        # the piano broke its timbral character — the spectral balance,
+        # level, and harmonic structure all drifted from what sounds like a
+        # piano.  Restore v140 exactly as the proven good baseline.
         n=14, rolloff=1.0, bright=0.28, bright_lo=0.38, bright_hi=0.20, hammer_hard=2.0,
         strike_pos=0.12, strike_depth=0.35, inh=0.00015, inh_stretch=3.0,
         b1=0.18, b3=0.03, rel_damp=3.5, coupling=0.15, phantom=0.008,
@@ -50,16 +54,16 @@ TIMBRES = {
         formant_freqs="300,1200,3000", formant_gains="0.10,0.08,0.04", formant_qs="1.0,1.5,2.0",
     ),
     "guitar": Timbre(
-        n=10, rolloff=0.95, bright=0.32, bright_lo=0.36, bright_hi=0.18, hammer_hard=1.8,
+        n=10, rolloff=0.95, bright=0.20, bright_lo=0.30, bright_hi=0.12, hammer_hard=1.8,
         strike_pos=0.14, strike_depth=0.30, inh=0.00003,
-        b1=0.42, b3=0.06, phantom=0.03,
-        att=0.001, d1=0.12, d1l=0.18, d2=2.5, d2s=5.0, pr=0.68, rel=0.20,
+        b1=0.25, b3=0.04, phantom=0.0,
+        att=0.006, d1=0.12, d1l=0.18, d2=2.5, d2s=5.0, pr=0.68, rel=0.20,
         va=0.5, vd=0.3, ps=0.10, pdm=1.5, det_c=0.6, det_m=0.03,
         noise=0.012, noise_d=100.0, noise_peak=8.0, noise_hi=1.0, vn=0.7,
         rel_damp=4.0, live=0.005, spec_b=0.5, spec_tau=0.020,
         drive=0.06, fc_base=5000.0, fc_min=0.30, fc_alpha=1.5, decay_exp=0.6,
         formant_freqs="480,1600,3200", formant_gains="0.24,0.16,0.10", formant_qs="1.8,1.6,2.0",
-        micro=0.6, ks_lp=0.65, ks_click=0.15,
+        micro=0.6, ks_lp=0.55, ks_click=0.04,
     ),
     "nylon": Timbre(
         n=8, rolloff=1.3, bright=0.45, bright_lo=0.50, bright_hi=0.32, hammer_hard=1.0,
@@ -80,18 +84,22 @@ TIMBRES = {
         noise=0.008, noise_d=60.0, noise_peak=4.0,
         drive=0.06, fc_base=3000.0, fc_min=0.40, fc_alpha=2.0, decay_exp=0.3,
         formant_freqs="180,1200,2800", formant_gains="0.18,0.12,0.08", formant_qs="1.0,1.2,1.5",
-        micro=0.25, ks_lp=0.50, ks_click=0.10, live=0.004,
+        micro=0.25, live=0.004,
     ),
     "synbass": Timbre(
-        harm_amps="1.0,0.85,0.65,0.50,0.38,0.28,0.20,0.14,0.10,0.07",
-        n=10, rolloff=0.6, bright=0.10,
-        b1=0.35, b3=0.06,
-        att=0.002, d1=0.04, d1l=0.75, d2=4.0, rel=0.18,
-        va=0.35, vn=0.2, ps=0.10, pdm=1.2,
-        noise=0.004, noise_d=50.0, noise_peak=4.5,
-        drive=0.12, fc_base=4500.0, fc_min=0.30, fc_alpha=1.8,
-        formant_freqs="120,3000", formant_gains="0.10,0.08", formant_qs="1.0,1.5",
-        live=0.005, spec_b=0.35, spec_tau=0.015, micro=0.20,
+        # Simpler, sub-focused synbass.  Previous version used a fast
+        # spec envelope (spec_tau=0.015) that created a "tchk" filter-sweep
+        # attack on every note; combined with drive=0.12 and strong upper
+        # harmonics it sounded harsh on rhythmic patterns ("en-ba en-ba").
+        # Now: fundamental-dominant, mild drive, no filter sweep.
+        harm_amps="1.0,0.55,0.30,0.18,0.10,0.06,0.03",
+        n=7, rolloff=0.6, bright=0.03,
+        b1=0.12, b3=0.015,
+        att=0.004, d1=0.05, d1l=0.80, d2=4.0, rel=0.18,
+        va=0.30, vn=0.15, ps=0.08, pdm=1.2,
+        noise=0.002, noise_d=40.0, noise_peak=3.0,
+        drive=0.05, fc_base=5000.0, fc_min=0.35, fc_alpha=1.0,
+        live=0.003, micro=0.15,
     ),
     "harp": Timbre(
         n=12, rolloff=0.70, bright=0.16, vel_bright=0.12,
@@ -136,17 +144,19 @@ TIMBRES = {
         bow_noise=0.008, micro=0.06,
     ),
     "contrabass": Timbre(
+        # v156: revert to v140 timbral character (formants, n_extra) but
+        # remain in additive engine since v152 (KS contrabass sounded
+        # plucked, not bowed).
         n=20, rolloff=0.50, bright=0.02, vel_bright=0.12,
         strike_pos=0.18, strike_depth=0.20,
         b1=0.012, b3=0.001, n_extra=15,
-        att=0.005, d1=0.08, d1l=0.55, d2=2.0, rel=0.20,
+        att=0.080, d1=0.30, d1l=0.85, d2=2.0, rel=0.60,
         va=0.30, vib_r=4.0, vib_d=2, vib_del=0.50,
         noise=0.006, noise_d=3.0, live=0.005,
         formant_freqs="180,500,1200,2800",
         formant_gains="0.30,0.25,0.15,0.06",
         formant_qs="1.0,1.2,1.5,2.0",
         bow_noise=0.0, micro=0.04,
-        ks_lp=0.45, ks_click=0.12,
     ),
     "brass": Timbre(
         n=16, rolloff=0.35, bright=0.04, vel_bright=0.48,
@@ -199,13 +209,18 @@ TIMBRES = {
         live=0.0, micro=0.0,
     ),
     "pad": Timbre(
-        n=20, rolloff=0.35, bright=0.05, n_extra=10,
-        att=0.45, d1=0.18, d1l=0.84, d2=25.0, rel=1.4,
-        va=0.06, vd=0.0, det_c=5.0, det_m=0.12,
-        vib_r=3.0, vib_d=3, vib_del=1.2,
-        noise=0.003, noise_d=1.0, live=0.006,
-        formant_freqs="350,1100,3000", formant_gains="0.25,0.20,0.08", formant_qs="1.0,1.2,2.0",
-        micro=0.02,
+        # Pad chord wah is physically inherent to additive synthesis of
+        # close-pitched notes (4 sines also wah at ~65% depth).  Mitigation:
+        # very few partials, gentle spectrum, low mix volume (0.55), heavy
+        # reverb downstream.  This makes pad a soft background wash where
+        # the residual chord beats are minimal in perceived loudness.
+        n=3, rolloff=1.4, bright=0.0,
+        att=0.65, d1=0.30, d1l=0.88, d2=28.0, rel=1.8,
+        va=0.06, vd=0.0,
+        vib_r=0.0, vib_d=0, vib_del=1.2,
+        noise=0.003, noise_d=2.5, noise_peak=8.0, live=0.0,
+        fc_base=1500.0, fc_min=0.55, fc_alpha=1.4,
+        micro=0.0, n_extra=3,
     ),
     "celesta": Timbre(
         n=8, rolloff=0.45, bright=0.12, bright_lo=0.22, bright_hi=0.06, hammer_hard=2.2,

@@ -34,7 +34,6 @@ Engines and their decorrelation mechanisms:
 |----------|-----------------------------------------------|
 | Additive | `ph_nid = nid * 2.399` added to phase accumulator |
 | FM       | Same `nid * 2.399` on carrier phase           |
-| Supersaw | `nid * 97.0` in polyBLEP starting phase       |
 | KS       | Sub-period output delay (`nid * period / 5.3`) |
 
 ## CC processing

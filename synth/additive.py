@@ -1,12 +1,16 @@
 """Additive synthesis with inline spectral envelope.
 Formant shaping is done per-partial via Lorentzian resonance, not post-EQ.
 _apply_formants retained for KS/FM paths only."""
-import numpy as np
+from __future__ import annotations
+
 import math
-from typing import List, NamedTuple, Tuple
+from typing import List, NamedTuple, Optional, Tuple
+
+import numpy as np
 from scipy.signal import sosfilt, resample_poly
+
 from .dsp import BoundedCache
-from .timbre import (SR, MAX_DET, TUNE, pr, lf, vc, strings_for_freq,
+from .timbre import (SR, MAX_DET, TUNE, Timbre, pr, lf, vc, strings_for_freq,
                      detune_scale, csv_parse, get_bp, biquad_peak)
 from .envelope import envelope
 
@@ -24,7 +28,7 @@ _SE_CACHE = BoundedCache(64)
 _PEAK_CACHE = BoundedCache(64)
 
 
-def _parse_formants(tim):
+def _parse_formants(tim: Timbre) -> list:
     key = (tim.formant_freqs, tim.formant_gains, tim.formant_qs)
     if key in _SE_CACHE:
         return _SE_CACHE[key]
@@ -47,7 +51,7 @@ def _spectral_gain(f, formants):
     return g
 
 
-def _get_peak_filters(tim):
+def _get_peak_filters(tim: Timbre) -> list:
     key = (tim.formant_freqs, tim.formant_gains, tim.formant_qs)
     if key in _PEAK_CACHE:
         return _PEAK_CACHE[key]
@@ -63,7 +67,7 @@ def _get_peak_filters(tim):
     return filters
 
 
-def _apply_formants(w, tim, freq=0):
+def _apply_formants(w: np.ndarray, tim: Timbre, freq: float = 0) -> np.ndarray:
     """Post-synthesis EQ formants for KS/FM engines only."""
     filters = _get_peak_filters(tim)
     if not filters:
@@ -76,7 +80,7 @@ def _apply_formants(w, tim, freq=0):
     return out * (rms_in / rms_out)
 
 
-def _brass_shape(w, vel, tim):
+def _brass_shape(w: np.ndarray, vel: float, tim: Timbre) -> np.ndarray:
     if tim.lip_shape <= 0:
         return w
     amount = tim.lip_shape * vel**1.5
@@ -90,7 +94,7 @@ def _brass_shape(w, vel, tim):
     return (1 - amount*0.5) * w + amount*0.5 * shaped
 
 
-def synthesize(freq: float, dur: float, vel: float, tim, name: str = "default", nid: int = 0, pb_curve=None) -> 'np.ndarray':
+def synthesize(freq: float, dur: float, vel: float, tim: Timbre, name: str = "default", nid: int = 0, pb_curve: Optional[np.ndarray] = None) -> np.ndarray:
     tail = min(tim.rel * 1.2 + 0.15, 2.5) if dur >= 0.2 else min(tim.rel + 0.20, 1.0)
     td = dur + tail
     n = int(SR * td)

@@ -216,7 +216,8 @@ def test_timbre_rejects_invalid():
 
 def test_clear_caches():
     """clear_caches() should not crash and should empty caches."""
-    from mix import clear_caches, _IR_CACHE
+    from mix import clear_caches
+    from mix.pipeline import _IR_CACHE
     # Populate a cache first
     from synth.dsp import _BP_CACHE, get_bp
     get_bp(200, 4000)

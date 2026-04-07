@@ -3,11 +3,12 @@
 Triangle pulse excitation, 2x oversampling, anti-harshness LP.
 LP phase delay subtracted from delay line for sub-cent pitch accuracy.
 """
+from __future__ import annotations
 import math
 import numpy as np
 from .dsp import BoundedCache
 from scipy.signal import resample_poly, butter, sosfilt
-from .timbre import SR, vc
+from .timbre import SR, Timbre, vc
 
 OS = 2
 SR_OS = SR * OS
@@ -36,7 +37,7 @@ def _anti_harshness(out, freq):
     return sosfilt(_AH_CACHE[key], out)
 
 
-def synthesize_plucked(freq: float, dur: float, vel: float, tim, name: str = "guitar", nid: int = 0) -> 'np.ndarray':
+def synthesize_plucked(freq: float, dur: float, vel: float, tim: Timbre, name: str = "guitar", nid: int = 0) -> np.ndarray:
     tail = min(tim.rel * 1.2 + 0.35, 2.5)
     n = int(SR * (dur + tail))
     if n == 0:
@@ -106,7 +107,7 @@ def synthesize_plucked(freq: float, dur: float, vel: float, tim, name: str = "gu
     if pk > 1e-6:
         out /= pk
 
-    att_n = min(int(SR * 0.002), n)
+    att_n = min(int(SR * max(tim.att, 0.002)), n)
     if att_n > 1:
         out[:att_n] *= np.linspace(0, 1, att_n) ** 0.5
 

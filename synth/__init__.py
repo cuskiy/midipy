@@ -1,15 +1,16 @@
 """Synthesis dispatcher: engine selection, crossfade, peak cap."""
+from __future__ import annotations
 
-from .timbre import SR, A4
+from typing import Optional
+
+from .timbre import SR, A4, Timbre
 from .instruments import TIMBRES
 from .gm import (PROGRAM_MAP, PANNING, FM_INSTRUMENTS, KS_PLUCKED,
-                 KS_DUR_THRESHOLD, KS_ALWAYS, SFX_INSTRUMENTS, LEAD_INSTRUMENTS,
-                 KS_GAIN)
+                 KS_DUR_THRESHOLD, KS_ALWAYS, SFX_INSTRUMENTS, KS_GAIN)
 from .additive import synthesize as _additive, _apply_formants
 from .fm import synthesize_fm as _fm
 from .ks import synthesize_plucked as _ks_pluck
 from .inharmonic import synthesize_sfx as _sfx
-from .supersaw import synthesize_lead as _lead
 from .drums import drum
 import numpy as np
 
@@ -59,7 +60,7 @@ def _apply_pb_shift(w, pb_curve):
     return out
 
 
-def _ks_with_formants(w, tim, freq=0):
+def _ks_with_formants(w: np.ndarray, tim: Timbre, freq: float = 0) -> np.ndarray:
     if tim.formant_freqs:
         w = _apply_formants(w, tim, freq)
     return _peak_cap(w)
@@ -69,15 +70,12 @@ def _ks_gain(name):
     return KS_GAIN.get(name, 1.0)
 
 
-def synthesize(freq: float, dur: float, vel: float, tim, name: str = "default",
-               nid: int = 0, pb_curve=None) -> np.ndarray:
+def synthesize(freq: float, dur: float, vel: float, tim: Timbre, name: str = "default",
+               nid: int = 0, pb_curve: Optional[np.ndarray] = None) -> np.ndarray:
     if name in SFX_INSTRUMENTS:
         if freq < _SFX_MIN_FREQ:
             return np.zeros(0)
         return _peak_cap(_sfx(freq, dur, vel, tim, name, nid, pb_curve=pb_curve))
-
-    if name in LEAD_INSTRUMENTS:
-        return _peak_cap(_lead(freq, dur, vel, tim, name, nid, pb_curve=pb_curve))
 
     if name in FM_INSTRUMENTS:
         return _peak_cap(_fm(freq, dur, vel, tim, name, nid, pb_curve=pb_curve))

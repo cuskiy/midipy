@@ -41,19 +41,19 @@ _CENTER_LOCK = {"bass", "synbass", "pad", "drums", "sfx", "choir"}
 
 # ── Per-instrument relative volume ───────────────────────────────────
 VOLUME = {
-    "piano": 0.95, "epiano": 1.0, "organ": 1.0, "harpsichord": 1.0,
+    "piano": 0.70, "epiano": 1.0, "organ": 1.0, "harpsichord": 1.0,
     "guitar": 1.0, "nylon": 1.0, "bass": 0.88, "synbass": 0.65,
     "strings": 1.0, "cello": 1.0, "contrabass": 0.92,
     "brass": 1.0, "woodwind": 1.0, "flute": 1.0, "choir": 1.0, "celesta": 1.0,
-    "vibes": 1.0, "marimba": 1.0, "harp": 1.0, "pad": 1.0, "lead": 0.90,
+    "vibes": 1.0, "marimba": 1.0, "harp": 1.0, "pad": 0.55, "lead": 0.90,
     "pluck": 1.0, "default": 1.0, "sfx": 0.55, "drums": 0.75,
 }
 
 # ── High-pass filter cutoff per instrument ───────────────────────────
 HP_FREQ = {
-    "drums": 30.0, "bass": 30.0, "synbass": 30.0,
-    "piano": 22.0, "organ": 28.0,
-    "cello": 25.0, "contrabass": 22.0, "pad": 40.0,
+    "drums": 30.0, "bass": 50.0, "synbass": 50.0,
+    "piano": 35.0, "organ": 55.0,
+    "cello": 40.0, "contrabass": 65.0, "pad": 55.0,
     "epiano": 30.0, "guitar": 55.0, "nylon": 55.0, "harp": 22.0,
     "harpsichord": 30.0, "pluck": 40.0, "default": 50.0, "sfx": 60.0,
     "strings": 45.0, "brass": 45.0, "woodwind": 65.0, "flute": 100.0,
@@ -77,25 +77,15 @@ REVERB_SEND = {
 
 # ── Engine routing sets ──────────────────────────────────────────────
 FM_INSTRUMENTS = {"epiano", "celesta", "vibes", "marimba"}
-LEAD_INSTRUMENTS = {"lead"}
+
 SFX_INSTRUMENTS = {"sfx"}
-KS_PLUCKED = {"guitar", "nylon", "harp", "harpsichord", "bass", "contrabass"}
-KS_ALWAYS = {"contrabass"}
+KS_PLUCKED = {"guitar", "nylon", "harp", "harpsichord"}
+KS_ALWAYS = set()
 KS_DUR_THRESHOLD = 0.8
 SYMPA_INSTRUMENTS = {"piano", "harpsichord", "harp"}
 
-# Precomputed reference RMS (A4 vel=0.85 dur=0.5) for fixed-gain scaling
-REF_RMS = {
-    "bass": 0.2368, "brass": 0.1064, "celesta": 0.1219, "cello": 0.1270,
-    "choir": 0.1639, "contrabass": 0.1977, "default": 0.1625, "epiano": 0.1769,
-    "flute": 0.2332, "guitar": 0.1929, "harp": 0.1650, "harpsichord": 0.1952,
-    "lead": 0.1813, "marimba": 0.1271, "nylon": 0.1828, "organ": 0.2311,
-    "pad": 0.0600, "piano": 0.2305, "pluck": 0.0619, "sfx": 0.1194,
-    "strings": 0.2072, "synbass": 0.1238, "vibes": 0.1270, "woodwind": 0.0890,
-}
-
 # Precomputed KS/additive gain calibration
 KS_GAIN = {
-    "bass": 1.5029, "contrabass": 2.1392, "guitar": 1.5587,
-    "harp": 1.6591, "harpsichord": 2.4288, "nylon": 0.9074,
+    "guitar": 1.5587, "harp": 1.6591,
+    "harpsichord": 2.4288, "nylon": 0.9074,
 }

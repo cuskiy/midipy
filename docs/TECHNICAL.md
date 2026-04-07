@@ -45,17 +45,6 @@ Used for: guitar (prog 24-31), bass (prog 32-37), contrabass (prog 43), nylon (p
 
 KS/additive crossfade: notes < 0.55s use pure KS; 0.55–0.95s blend KS+additive (equal-power); > 0.95s use additive with KS gain calibration.
 
-### Supersaw (`supersaw.py`)
-
-5-voice band-limited sawtooth (polyBLEP) with detuning.
-
-- **Voices**: 5 at [-6, -3, 0, +3, +6] cents, amplitudes [0.15, 0.22, 0.26, 0.22, 0.15]
-- **Oversampling**: 2× when `freq ≥ 200 Hz`
-- **Filter chain**: HP 30Hz → LP (fc from timbre) → low-shelf -2dB@180Hz → presence +1dB@3.5kHz
-- **Phase decorrelation**: `phase0 = (freq×137 + det_cents×53 + nid×97) % 2π`
-
-Used for: lead (prog 80-87, 100-103).
-
 ### Filtered noise (`inharmonic.py`)
 
 Three bandpass-filtered noise bands with independent decay.
@@ -245,9 +234,9 @@ Center-locked (ignore pan CC): bass, synbass, pad, drums, sfx, choir.
 | 64–71 | Additive | woodwind |
 | 72–75 | Additive | flute |
 | 76–79 | Additive | woodwind |
-| 80–87 | Supersaw | lead |
+| 80–87 | Additive | lead |
 | 88–99 | Additive | pad |
-| 100–103 | Supersaw | lead |
+| 100–103 | Additive | lead |
 | 104–107 | KS | guitar |
 | 108–109 | FM | celesta |
 | 110–111 | FM | vibes |
@@ -278,7 +267,7 @@ Center-locked (ignore pan CC): bass, synbass, pad, drums, sfx, choir.
 
 Default range: ±2 semitones (adjustable via RPN 0,0).
 Linear interpolation between events (correct for continuous PB).
-Supported in all engines: additive, FM, KS (post-process), supersaw, SFX (median shift).
+Supported in all engines: additive, FM, KS (post-process), SFX (median shift).
 
 ### Channel aftertouch
 

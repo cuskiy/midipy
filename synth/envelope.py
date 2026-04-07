@@ -1,7 +1,9 @@
+"""ADSR envelope generator with liveness modulation."""
+from __future__ import annotations
 import numpy as np
-from .timbre import SR, lf, vc
+from .timbre import SR, Timbre, lf, vc
 
-def envelope(tim, dur: float, n: int, vel: float, freq: float, noff: int) -> 'np.ndarray':
+def envelope(tim: Timbre, dur: float, n: int, vel: float, freq: float, noff: int) -> np.ndarray:
     lo_factor, vel_c = lf(freq), vc(vel)
     att_time = min(tim.att * (1 - tim.va*vel_c), dur*0.25)
     dec_time = min(tim.d1, dur*0.4)
